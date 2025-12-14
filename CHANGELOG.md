@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-12-15
+
+### Added
+- 🐍 **Multi-Python Version Detection and Selection**
+  - Automatically detects all Python installations using both `where python` and Python Launcher (`py -0p`)
+  - Allows users to select which Python version to reset when operating on global environment
+  - Automatic deduplication of detected Python paths
+  - Single-version auto-selection when only one Python installation is found
+- ✨ Enhanced global environment workflow with version selection
+- 🔧 Enabled delayed variable expansion for improved script reliability
+
+### Changed
+- All `python` and `pip` commands now use the selected Python version
+- Improved script robustness with consistent use of delayed expansion variables
+- Enhanced Python path extraction from `py -0p` output
+
+### Technical Details
+- Added `:SelectPythonVersion` subroutine for multi-version detection
+- Added `:CheckDuplicate` subroutine for removing duplicate Python paths
+- Modified all pip operations to use `python -m pip` for version-specific execution
+- Introduced `SELECTED_PYTHON` variable to track the chosen Python interpreter
+
 ## [1.0.0] - 2025-12-02
 
 ### Added

@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableDelayedExpansion
 chcp 65001 >nul
 cd /d "%~dp0"
 
@@ -37,6 +38,8 @@ goto :NoVenvWarning
 
 :ShowEnv
 :: 到这里说明已经在虚拟环境中了
+:: 虚拟环境中直接使用 python 命令
+set "SELECTED_PYTHON=python"
 echo.
 echo 当前 Python 环境:
 echo ------------------------------------------
@@ -47,7 +50,7 @@ for /f "tokens=*" %%i in ('where python') do (
 )
 
 :ShowVersion
-python --version
+!SELECTED_PYTHON! --version
 echo ------------------------------------------
 echo.
 
@@ -98,13 +101,146 @@ echo.
 echo 你已确认操作全局环境...
 echo.
 
+:: 检测并选择 Python 版本
+goto :SelectPythonVersion
+
+:SelectPythonVersion
+echo ==========================================
+echo       检测 Python 版本
+echo ==========================================
+echo.
+
+:: 创建临时文件存储Python路径
+set TEMP_PYTHON_LIST=temp_python_list.txt
+if exist "%TEMP_PYTHON_LIST%" del "%TEMP_PYTHON_LIST%"
+
+:: 方法1: 使用 where python 获取 PATH 中的所有 python.exe
+where python >nul 2>&1
+if not errorlevel 1 (
+    for /f "tokens=*" %%i in ('where python 2^>nul') do (
+        echo %%i >> "%TEMP_PYTHON_LIST%"
+    )
+)
+
+:: 方法2: 使用 py launcher 获取所有已安装的 Python 版本
+py -0p >nul 2>&1
+if not errorlevel 1 (
+    for /f "tokens=*" %%i in ('py -0p 2^>nul') do (
+        set "LINE=%%i"
+        :: 提取最后一个token (Python路径)
+        for %%p in (!LINE!) do set "PYTHON_PATH=%%p"
+        :: 检查是否是.exe文件
+        echo !PYTHON_PATH! | findstr /i "\.exe$" >nul
+        if not errorlevel 1 (
+            echo !PYTHON_PATH! >> "%TEMP_PYTHON_LIST%"
+        )
+    )
+)
+
+:: 检查是否找到任何 Python 版本
+if not exist "%TEMP_PYTHON_LIST%" (
+    echo [错误] 未找到任何 Python 安装！
+    pause
+    exit /b 1
+)
+
+:: 去重并编号显示
+echo 检测到以下 Python 版本:
+echo ------------------------------------------
+set INDEX=0
+set TOTAL=0
+
+:: 先计算总数并去重
+for /f "usebackq tokens=*" %%i in ("%TEMP_PYTHON_LIST%") do (
+    set "CURRENT_PATH=%%i"
+    call :CheckDuplicate "!CURRENT_PATH!"
+)
+
+:: 如果只有一个版本，直接使用
+if %TOTAL%==1 (
+    for /f "usebackq tokens=*" %%i in ("%TEMP_PYTHON_LIST%.dedup") do (
+        set "SELECTED_PYTHON=%%i"
+    )
+    echo.
+    echo 检测到唯一 Python 版本: !SELECTED_PYTHON!
+    "!SELECTED_PYTHON!" --version 2>nul
+    echo.
+    del "%TEMP_PYTHON_LIST%" >nul 2>&1
+    del "%TEMP_PYTHON_LIST%.dedup" >nul 2>&1
+    goto :GetPackages
+)
+
+:: 显示所有版本供用户选择
+set INDEX=0
+for /f "usebackq tokens=*" %%i in ("%TEMP_PYTHON_LIST%.dedup") do (
+    set /a INDEX+=1
+    set "PYTHON_PATH_!INDEX!=%%i"
+    echo [!INDEX!] %%i
+    "%%i" --version 2>nul | findstr /r "Python" >nul
+    if not errorlevel 1 (
+        for /f "tokens=*" %%v in ('"%%i" --version 2^>^&1') do echo     %%v
+    )
+)
+echo ------------------------------------------
+echo.
+
+:AskVersion
+set /p PYTHON_CHOICE=请选择 Python 版本 [1-%TOTAL%]:
+
+:: 验证输入
+echo %PYTHON_CHOICE%| findstr /r "^[0-9][0-9]*$" >nul
+if errorlevel 1 (
+    echo [错误] 请输入有效的数字！
+    goto :AskVersion
+)
+
+if %PYTHON_CHOICE% LSS 1 (
+    echo [错误] 请输入 1 到 %TOTAL% 之间的数字！
+    goto :AskVersion
+)
+
+if %PYTHON_CHOICE% GTR %TOTAL% (
+    echo [错误] 请输入 1 到 %TOTAL% 之间的数字！
+    goto :AskVersion
+)
+
+:: 获取选定的 Python 路径
+call set "SELECTED_PYTHON=%%PYTHON_PATH_%PYTHON_CHOICE%%%"
+
+echo.
+echo 已选择: !SELECTED_PYTHON!
+"!SELECTED_PYTHON!" --version
+echo.
+
+:: 清理临时文件
+del "%TEMP_PYTHON_LIST%" >nul 2>&1
+del "%TEMP_PYTHON_LIST%.dedup" >nul 2>&1
+
+goto :GetPackages
+
+:CheckDuplicate
+set "CHECK_PATH=%~1"
+set "IS_DUP=0"
+
+if exist "%TEMP_PYTHON_LIST%.dedup" (
+    for /f "usebackq tokens=*" %%d in ("%TEMP_PYTHON_LIST%.dedup") do (
+        if /i "%%d"=="%CHECK_PATH%" set "IS_DUP=1"
+    )
+)
+
+if !IS_DUP!==0 (
+    echo %CHECK_PATH% >> "%TEMP_PYTHON_LIST%.dedup"
+    set /a TOTAL+=1
+)
+exit /b
+
 :GetPackages
 echo ==========================================
 echo       获取已安装包列表
 echo ==========================================
 echo.
 
-pip freeze > temp_packages.txt 2>nul
+"!SELECTED_PYTHON!" -m pip freeze > temp_packages.txt 2>nul
 
 if errorlevel 1 (
     echo [错误] 无法获取已安装包列表，pip 可能损坏
@@ -142,7 +278,7 @@ echo       正在卸载包...
 echo ==========================================
 echo.
 
-pip uninstall -r temp_packages.txt -y
+"!SELECTED_PYTHON!" -m pip uninstall -r temp_packages.txt -y
 
 if errorlevel 1 (
     echo.
@@ -160,14 +296,14 @@ echo ==========================================
 echo.
 
 echo [1/2] 升级 pip...
-python -m pip install --upgrade pip --quiet
+"!SELECTED_PYTHON!" -m pip install --upgrade pip --quiet
 
 if errorlevel 1 (
     echo [警告] pip 升级失败，尝试继续...
 )
 
 echo [2/2] 安装 setuptools 和 wheel...
-pip install --upgrade setuptools wheel --quiet
+"!SELECTED_PYTHON!" -m pip install --upgrade setuptools wheel --quiet
 
 if errorlevel 1 (
     echo [错误] 基础包安装失败！
@@ -182,7 +318,7 @@ echo ==========================================
 echo.
 echo 当前环境包列表:
 echo ------------------------------------------
-pip list
+"!SELECTED_PYTHON!" -m pip list
 echo ------------------------------------------
 echo.
 

@@ -15,6 +15,7 @@ A lightweight Windows batch script tool for safely resetting Python virtual envi
 
 - 🔍 **Auto-Detection**: Automatically detects common virtual environment directories (`.venv`, `venv`, `env`, `.env`)
 - 🛡️ **Safety First**: Warns users when operating on global Python environment
+- 🐍 **Multi-Version Support**: Automatically detects and allows selection from multiple Python installations
 - 📦 **Clean Reset**: Uninstalls all packages and reinstalls base packages (pip, setuptools, wheel)
 - 🎯 **User-Friendly**: Clear prompts and confirmations before any destructive operations
 - 🌐 **UTF-8 Support**: Properly handles Chinese and other Unicode characters
@@ -59,7 +60,15 @@ The script will:
 If no virtual environment is detected, the script will:
 1. Display a **strong warning**
 2. Require explicit confirmation (type `YES` in uppercase)
-3. Proceed only if confirmed
+3. **Detect all Python installations** on your system
+4. Allow you to **select a specific Python version** to reset
+5. Proceed with the reset on the selected Python installation
+
+**Multi-Version Detection:**
+- The script uses both `where python` and Python Launcher (`py -0p`) to find all installations
+- Automatically removes duplicates
+- If only one version is found, it will be used automatically
+- If multiple versions are found, you can choose which one to reset
 
 ### 🔧 Supported Virtual Environment Names
 
@@ -132,6 +141,7 @@ Created with ❤️ for Python developers
 
 - 🔍 **自动检测**：自动检测常见的虚拟环境目录（`.venv`、`venv`、`env`、`.env`）
 - 🛡️ **安全优先**：在操作全局 Python 环境时会发出强烈警告
+- 🐍 **多版本支持**：自动检测并允许从多个 Python 安装中选择
 - 📦 **彻底清理**：卸载所有包并重新安装基础包（pip、setuptools、wheel）
 - 🎯 **用户友好**：在执行任何破坏性操作前都有清晰的提示和确认
 - 🌐 **UTF-8 支持**：正确处理中文和其他 Unicode 字符
@@ -176,7 +186,15 @@ env-reset.bat
 如果未检测到虚拟环境，脚本将：
 1. 显示**强烈警告**
 2. 要求明确确认（输入大写的 `YES`）
-3. 仅在确认后才继续执行
+3. **检测系统中所有 Python 安装**
+4. 允许你**选择特定的 Python 版本**进行重置
+5. 对选定的 Python 安装执行重置操作
+
+**多版本检测功能：**
+- 脚本使用 `where python` 和 Python Launcher (`py -0p`) 查找所有安装
+- 自动去除重复项
+- 如果只找到一个版本，将自动使用
+- 如果找到多个版本，可以选择要重置的版本
 
 ### 🔧 支持的虚拟环境名称
 
