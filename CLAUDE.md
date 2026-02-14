@@ -89,7 +89,7 @@ The `env-reset.bat` script follows a state-machine pattern with labeled sections
 
 ## File Structure
 
-- `env-reset.bat` - Main executable script (333 lines, v1.1.0)
+- `env-reset.bat` - Main executable script (372 lines, v1.2.0)
 - `README.md` - Bilingual documentation with usage examples
 - `CHANGELOG.md` - Version history (currently v1.1.0)
 - `CLAUDE.md` - This file, guidance for Claude Code

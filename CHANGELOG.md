@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-14
+
+### Fixed
+- 🐛 **修复可编辑安装包（editable install）导致卸载失败的问题**
+  - `pip freeze` 输出中的 `-e` 行会导致 `pip uninstall -r` 报错
+  - 现在将可编辑包与常规包分离，分别处理
+  - 可编辑包通过 `pip list --editable --format=freeze` 获取包名后逐个卸载
+  - 常规包仍通过 `-r` 批量卸载
+
+### Changed
+- 包列表展示时区分显示常规包和可编辑安装的包
+- 改进临时文件清理，所有路径都使用 `>nul 2>&1` 抑制错误
+
 ## [1.1.0] - 2025-12-15
 
 ### Added
